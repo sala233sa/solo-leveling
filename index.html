@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tareas Automáticas - Solo Leveling</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      color: #ffffff;
+      background-image: url('a_cleanup.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    .contenido {
+      min-height: 100vh;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    th {
+      text-align: center;
+      color: #ffffff;
+      border: 3px solid #ffffff;
+      text-shadow: 0 0 10px #00BFFF;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 30px;
+    }
+
+    li {
+      background-color: #0A1F44;
+      margin: 15px auto;
+      padding: 15px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      color: #ffffff;
+      box-shadow: 0 0 10px #00BFFF;
+      font-size: 1rem;
+    }
+
+    .castigo {
+      background-color: #440000;
+      border-left: 5px solid red;
+    }
+
+    .mensaje-texto {
+      flex: 1;
+      margin-right: 35px;
+    }
+
+    .acciones {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .acciones button {
+      padding: 10px;
+      border: none;
+      border-radius: 50%;
+      background-color: #1E90FF;
+      color: white;
+      font-size: 1rem;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+    }
+
+    .acciones button:hover {
+      background-color: #00BFFF;
+    }
+  </style>
+</head>
+<body>
+  <div class="contenido">
+    <table style="width:100%;">
+      <tr>
+        <th style="width:10%;">
+          <img src="Captura de pantalla 2025-07-14 002302.png" style="width: 4rem; height: 5rem;">
+        </th>
+        <th><h1>NOTIFICATION</h1></th>
+      </tr>
+    </table>
+
+    <ul id="lista"></ul>
+  </div>
+
+  <script>
+    const tareasPorDia = {
+      0: ["Terminar de trabajar", "Estudiar", "Dormir", "Analizar alimentación"],
+      1: ["3 minutos de sombra", "1 hora de programación", "2 horas afuera", "Leer", "Hacer aseo"],
+      2: ["Leer", "6 minutos de sombra", "Socializar (mínimo 2 horas)", "Platzi", "1 hora de estudiar"],
+      3: ["Entrenamiento (resistencia)", "Sombra", "Chees", "Analizar problemas", "Salir"],
+      4: ["Preparar camisas", "Cambiar de estrategias", "Solucionar problemas", "Leer"],
+      5: ["Terminar de trabajar", "Estudiar", "Dormir", "Analizar alimentación"],
+      6: ["Terminar de trabajar", "Estudiar", "Dormir", "Analizar alimentación"]
+    };
+
+    const castigos = [
+      "🔥 Plancha 30 minutos",
+      "💪 1000 flexiones",
+      "🏃‍♂️ 2 km corriendo",
+      "📵 2 horas sin celular",
+      "🎵 1 hora sin música",
+      "📚 +2 horas de estudio"
+    ];
+
+    let tareas = JSON.parse(localStorage.getItem("tareas")) || [];
+    let castigoPendiente = localStorage.getItem("castigoPendiente") || null;
+    const hoy = new Date().getDay();
+
+    function cargarTareasDelDia() {
+      if (tareas.length === 0) {
+        tareas = tareasPorDia[hoy].map(t => ({ texto: t, cumplida: false }));
+        localStorage.setItem("tareas", JSON.stringify(tareas));
+      }
+    }
+
+    function mostrarTareas() {
+      const lista = document.getElementById('lista');
+      lista.innerHTML = '';
+
+      if (castigoPendiente) {
+        const li = document.createElement('li');
+        li.classList.add('castigo');
+        li.innerHTML = `<div class="mensaje-texto"><strong>⚠ Castigo:</strong> ${castigoPendiente}</div>`;
+        lista.appendChild(li);
+        castigoPendiente = null;
+        localStorage.removeItem("castigoPendiente");
+      }
+
+      if (tareas.length === 0) {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div class="mensaje-texto">¿Estás seguro de dejarlo vacío?</div>
+        `;
+        lista.appendChild(li);
+        return;
+      }
+
+      tareas.forEach((msg, i) => {
+        if (!msg.cumplida) {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <div class="mensaje-texto">${msg.texto}</div>
+            <div class="acciones">
+              <button onclick="completar(${i})">✅</button>
+              <button onclick="eliminar(${i})">❌</button>
+            </div>
+          `;
+          lista.appendChild(li);
+        }
+      });
+    }
+
+    function completar(i) {
+      tareas[i].cumplida = true;
+      guardarTareas();
+      mostrarTareas();
+    }
+
+    function eliminar(i) {
+      const confirmacion = confirm("¿Estás seguro de eliminar esta tarea?");
+      if (confirmacion) {
+        tareas.splice(i, 1);
+        guardarTareas();
+        mostrarTareas();
+      } else {
+        // recrear automáticamente
+        tareas[i].cumplida = false;
+        mostrarTareas();
+      }
+    }
+
+    function guardarTareas() {
+      localStorage.setItem("tareas", JSON.stringify(tareas));
+    }
+
+    function verificarTareasAlFinalDelDia() {
+      const incompletas = tareas.filter(t => !t.cumplida);
+      if (incompletas.length > 0) {
+        const castigo = castigos[Math.floor(Math.random() * castigos.length)];
+        localStorage.setItem("castigoPendiente", castigo);
+      }
+      localStorage.removeItem("tareas");
+    }
+
+    function notificarPendiente() {
+      if (Notification.permission !== "granted") return;
+
+      const tareasPendientes = tareas.filter(t => !t.cumplida);
+      if (tareasPendientes.length > 0) {
+        new Notification("Tarea pendiente", {
+          body: "Tienes tareas por hacer hoy.",
+          icon: "https://cdn-icons-png.flaticon.com/512/1827/1827392.png"
+        });
+      }
+    }
+
+    // Solicitar permiso
+    if ("Notification" in window) {
+      Notification.requestPermission();
+    }
+
+    // Enviar notificación cada 2 horas
+    setInterval(() => {
+      notificarPendiente();
+    }, 1000 * 60 * 60 * 2); // 2 horas
+
+    // A las 23:59 ejecutar verificación final
+    setTimeout(() => {
+      const now = new Date();
+      const horaRestante = ((23 - now.getHours()) * 60 + (59 - now.getMinutes())) * 60 * 1000;
+      setTimeout(() => {
+        verificarTareasAlFinalDelDia();
+      }, horaRestante);
+    }, 2000);
+
+    // Inicialización
+    cargarTareasDelDia();
+    mostrarTareas();
+  </script>
+</body>
+</html>
